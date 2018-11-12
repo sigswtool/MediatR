@@ -26,22 +26,28 @@ namespace MediatR.Examples.SimpleInjector
             var assemblies = GetAssemblies().ToArray();
             container.RegisterSingleton<IMediator, Mediator>();
             container.Register(typeof(IRequestHandler<,>), assemblies);
-			container.Register(typeof(IRequestHandler<>), assemblies);
-            container.RegisterCollection(typeof(INotificationHandler<>), assemblies);
-            container.RegisterSingleton<TextWriter>(writer);
+
+            // we have to do this because by default, generic type definitions (such as the Constrained Notification Handler) won't be registered
+            var notificationHandlerTypes = container.GetTypesToRegister(typeof(INotificationHandler<>), assemblies, new TypesToRegisterOptions
+            {
+                IncludeGenericTypeDefinitions = true,
+                IncludeComposites = false,
+            });
+            container.Collection.Register(typeof(INotificationHandler<>), notificationHandlerTypes);
+
+            container.Register(() => (TextWriter)writer, Lifestyle.Singleton);
 
             //Pipeline
-            container.RegisterCollection(typeof(IPipelineBehavior<,>), new []
+            container.Collection.Register(typeof(IPipelineBehavior<,>), new []
             {
                 typeof(RequestPreProcessorBehavior<,>),
                 typeof(RequestPostProcessorBehavior<,>),
                 typeof(GenericPipelineBehavior<,>)
             });
-            container.RegisterCollection(typeof(IRequestPreProcessor<>), new [] { typeof(GenericRequestPreProcessor<>) });
-            container.RegisterCollection(typeof(IRequestPostProcessor<,>), new[] { typeof(GenericRequestPostProcessor<,>), typeof(ConstrainedRequestPostProcessor<,>) });
+            container.Collection.Register(typeof(IRequestPreProcessor<>), new [] { typeof(GenericRequestPreProcessor<>) });
+            container.Collection.Register(typeof(IRequestPostProcessor<,>), new[] { typeof(GenericRequestPostProcessor<,>), typeof(ConstrainedRequestPostProcessor<,>) });
 
-            container.RegisterSingleton(new SingleInstanceFactory(container.GetInstance));
-            container.RegisterSingleton(new MultiInstanceFactory(container.GetAllInstances));
+            container.Register(() => new ServiceFactory(container.GetInstance), Lifestyle.Singleton);
 
             container.Verify();
 

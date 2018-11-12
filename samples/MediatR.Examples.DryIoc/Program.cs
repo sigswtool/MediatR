@@ -1,9 +1,7 @@
 using System;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
 using DryIoc;
-using MediatR.Pipeline;
 
 namespace MediatR.Examples.DryIoc
 {
@@ -21,13 +19,12 @@ namespace MediatR.Examples.DryIoc
         {
             var container = new Container();
 
-            container.RegisterDelegate<SingleInstanceFactory>(r => r.Resolve);
-            container.RegisterDelegate<MultiInstanceFactory>(r => serviceType => r.ResolveMany(serviceType));
+            container.RegisterDelegate<ServiceFactory>(r => r.Resolve);
             container.UseInstance<TextWriter>(writer);
 
             //Pipeline works out of the box here
 
-            container.RegisterMany(new[] { typeof(IMediator).GetAssembly(), typeof(Ping).GetAssembly() }, type => type.GetTypeInfo().IsInterface); 
+            container.RegisterMany(new[] { typeof(IMediator).GetAssembly(), typeof(Ping).GetAssembly() }, Registrator.Interfaces);
 
             return container.Resolve<IMediator>();
         }

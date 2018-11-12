@@ -60,11 +60,11 @@ namespace MediatR.Tests
             }
         }
 
-        public class VoidNullPingHandler : IRequestHandler<VoidNullPing>
+        public class VoidNullPingHandler : IRequestHandler<VoidNullPing, Unit>
         {
-            public Task Handle(VoidNullPing message, CancellationToken cancellationToken)
+            public Task<Unit> Handle(VoidNullPing request, CancellationToken cancellationToken)
             {
-                return Task.FromResult(0);
+                return Unit.Task;
             }
         }
 
@@ -72,8 +72,7 @@ namespace MediatR.Tests
         {
             var container = new Container(cfg =>
             {
-                cfg.For<SingleInstanceFactory>().Use<SingleInstanceFactory>(ctx => t => ctx.GetInstance(t));
-                cfg.For<MultiInstanceFactory>().Use<MultiInstanceFactory>(ctx => t => ctx.GetAllInstances(t));
+                cfg.For<ServiceFactory>().Use<ServiceFactory>(ctx => ctx.GetInstance);
                 cfg.For<IMediator>().Use<Mediator>();
             });
             _mediator = container.GetInstance<IMediator>();
@@ -145,8 +144,7 @@ namespace MediatR.Tests
                     scanner.WithDefaultConventions();
                     scanner.AddAllTypesOf(typeof(IRequestHandler<,>));
                 });
-                cfg.For<SingleInstanceFactory>().Use<SingleInstanceFactory>(ctx => t => ctx.GetInstance(t));
-                cfg.For<MultiInstanceFactory>().Use<MultiInstanceFactory>(ctx => t => ctx.GetAllInstances(t));
+                cfg.For<ServiceFactory>().Use<ServiceFactory>(ctx => t => ctx.GetInstance(t));
                 cfg.For<IMediator>().Use<Mediator>();
             });
             var mediator = container.GetInstance<IMediator>();
@@ -168,8 +166,7 @@ namespace MediatR.Tests
                     scanner.WithDefaultConventions();
                     scanner.AddAllTypesOf(typeof(IRequestHandler<,>));
                 });
-                cfg.For<SingleInstanceFactory>().Use<SingleInstanceFactory>(ctx => t => ctx.GetInstance(t));
-                cfg.For<MultiInstanceFactory>().Use<MultiInstanceFactory>(ctx => t => ctx.GetAllInstances(t));
+                cfg.For<ServiceFactory>().Use<ServiceFactory>(ctx => t => ctx.GetInstance(t));
                 cfg.For<IMediator>().Use<Mediator>();
             });
             var mediator = container.GetInstance<IMediator>();
@@ -191,8 +188,7 @@ namespace MediatR.Tests
                     scanner.WithDefaultConventions();
                     scanner.AddAllTypesOf(typeof(IRequestHandler<,>));
                 });
-                cfg.For<SingleInstanceFactory>().Use<SingleInstanceFactory>(ctx => t => ctx.GetInstance(t));
-                cfg.For<MultiInstanceFactory>().Use<MultiInstanceFactory>(ctx => t => ctx.GetAllInstances(t));
+                cfg.For<ServiceFactory>().Use<ServiceFactory>(ctx => t => ctx.GetInstance(t));
                 cfg.For<IMediator>().Use<Mediator>();
             });
             var mediator = container.GetInstance<IMediator>();
@@ -200,6 +196,50 @@ namespace MediatR.Tests
             NullPinged notification = null;
 
             await Should.ThrowAsync<ArgumentNullException>(async () => await mediator.Publish(notification));
+        }
+
+        [Fact]
+        public async Task Should_throw_argument_exception_for_publish_when_request_is_null_object()
+        {
+            var container = new Container(cfg =>
+            {
+                cfg.Scan(scanner =>
+                {
+                    scanner.AssemblyContainingType(typeof(NullPinged));
+                    scanner.IncludeNamespaceContainingType<Ping>();
+                    scanner.WithDefaultConventions();
+                    scanner.AddAllTypesOf(typeof(IRequestHandler<,>));
+                });
+                cfg.For<ServiceFactory>().Use<ServiceFactory>(ctx => t => ctx.GetInstance(t));
+                cfg.For<IMediator>().Use<Mediator>();
+            });
+            var mediator = container.GetInstance<IMediator>();
+
+            object notification = null;
+
+            await Should.ThrowAsync<ArgumentNullException>(async () => await mediator.Publish(notification));
+        }
+
+        [Fact]
+        public async Task Should_throw_argument_exception_for_publish_when_request_is_not_notification()
+        {
+            var container = new Container(cfg =>
+            {
+                cfg.Scan(scanner =>
+                {
+                    scanner.AssemblyContainingType(typeof(NullPinged));
+                    scanner.IncludeNamespaceContainingType<Ping>();
+                    scanner.WithDefaultConventions();
+                    scanner.AddAllTypesOf(typeof(IRequestHandler<,>));
+                });
+                cfg.For<ServiceFactory>().Use<ServiceFactory>(ctx => t => ctx.GetInstance(t));
+                cfg.For<IMediator>().Use<Mediator>();
+            });
+            var mediator = container.GetInstance<IMediator>();
+
+            object notification = "totally not notification";
+
+            await Should.ThrowAsync<ArgumentException>(async () => await mediator.Publish(notification));
         }
     }
 }

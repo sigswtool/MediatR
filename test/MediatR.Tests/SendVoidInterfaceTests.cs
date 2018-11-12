@@ -2,13 +2,11 @@ using System.Threading;
 
 namespace MediatR.Tests
 {
-    using System;
     using System.IO;
     using System.Text;
     using System.Threading.Tasks;
     using Shouldly;
     using StructureMap;
-    using StructureMap.Graph;
     using Xunit;
 
     public class SendVoidInterfaceTests
@@ -18,19 +16,14 @@ namespace MediatR.Tests
             public string Message { get; set; }
         }
 
-        public class PingHandler : IRequestHandler<Ping>
+        public class PingHandler : AsyncRequestHandler<Ping>
         {
             private readonly TextWriter _writer;
 
-            public PingHandler(TextWriter writer)
-            {
-                _writer = writer;
-            }
+            public PingHandler(TextWriter writer) => _writer = writer;
 
-            public Task Handle(Ping message, CancellationToken cancellationToken)
-            {
-                return _writer.WriteAsync(message.Message + " Pong");
-            }
+            protected override Task Handle(Ping request, CancellationToken cancellationToken)
+                => _writer.WriteAsync(request.Message + " Pong");
         }
 
         [Fact]
@@ -46,10 +39,9 @@ namespace MediatR.Tests
                     scanner.AssemblyContainingType(typeof(PublishTests));
                     scanner.IncludeNamespaceContainingType<Ping>();
                     scanner.WithDefaultConventions();
-                    scanner.AddAllTypesOf(typeof (IRequestHandler<>));
+                    scanner.AddAllTypesOf(typeof (IRequestHandler<,>));
                 });
-                cfg.For<SingleInstanceFactory>().Use<SingleInstanceFactory>(ctx => t => ctx.GetInstance(t));
-                cfg.For<MultiInstanceFactory>().Use<MultiInstanceFactory>(ctx => t => ctx.GetAllInstances(t));
+                cfg.For<ServiceFactory>().Use<ServiceFactory>(ctx => ctx.GetInstance);
                 cfg.For<TextWriter>().Use(writer);
                 cfg.For<IMediator>().Use<Mediator>();
             });

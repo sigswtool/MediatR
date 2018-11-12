@@ -13,21 +13,21 @@ namespace MediatR
         /// <summary>
         /// Handles a notification
         /// </summary>
-        /// <param name="notification">The notification message</param>
+        /// <param name="notification">The notification</param>
         /// <param name="cancellationToken">Cancellation token</param>
         Task Handle(TNotification notification, CancellationToken cancellationToken);
     }
 
     /// <summary>
-    /// Wrapper calss for a synchronous notification handler
+    /// Wrapper class for a synchronous notification handler
     /// </summary>
     /// <typeparam name="TNotification">The notification type</typeparam>
     public abstract class NotificationHandler<TNotification> : INotificationHandler<TNotification>
         where TNotification : INotification
     {
-        public Task Handle(TNotification notification, CancellationToken cancellationToken)
+        Task INotificationHandler<TNotification>.Handle(TNotification notification, CancellationToken cancellationToken)
         {
-            HandleCore(notification);
+            Handle(notification);
             return Unit.Task;
         }
 
@@ -35,24 +35,6 @@ namespace MediatR
         /// Override in a derived class for the handler logic
         /// </summary>
         /// <param name="notification">Notification</param>
-        protected abstract void HandleCore(TNotification notification);
-    }
-
-    /// <summary>
-    /// Wrapper class for an async notification handler, ignoring the cancellation token
-    /// </summary>
-    /// <typeparam name="TNotification">The notification type</typeparam>
-    public abstract class AsyncNotificationHandler<TNotification> : INotificationHandler<TNotification>
-        where TNotification : INotification
-    {
-        public Task Handle(TNotification notification, CancellationToken cancellationToken)
-            => HandleCore(notification);
-
-        /// <summary>
-        /// Override in a derived class for the handler logic 
-        /// </summary>
-        /// <param name="notification">Notification</param>
-        /// <returns>A task</returns>
-        protected abstract Task HandleCore(TNotification notification);
+        protected abstract void Handle(TNotification notification);
     }
 }
